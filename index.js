@@ -54,6 +54,16 @@ async function run() {
       res.send(categories);
     });
 
+    // Get Products by Category Id
+    app.get("/categories/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = {
+        categoryId: ObjectId(id),
+      };
+      const products = await productCollection.find(query).toArray();
+    });
+
     // Add Product
     app.post("/products", async (req, res) => {
       const product = req.body;
@@ -73,6 +83,7 @@ async function run() {
       sellers.forEach((seller) => {
         if (seller.email === product.sellerEmail) {
           product.sellerId = seller._id;
+          product.isSellerVerified = seller.isVerified;
         }
       });
 
@@ -112,6 +123,15 @@ async function run() {
         return res.send({ accessToken: token });
       }
       return res.status(403).send({ accessToken: "" });
+    });
+
+    app.get("/users", async (req, res) => {
+      const role = req.query.role;
+      const query = {
+        role: role,
+      };
+      const usersByRole = await usersCollection.find(query).toArray();
+      res.send(usersByRole);
     });
   } finally {
   }
