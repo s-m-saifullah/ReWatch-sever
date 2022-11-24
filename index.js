@@ -45,12 +45,41 @@ async function run() {
     const categoriesCollection = client
       .db("rewatch")
       .collection("watchCategories");
+    const productCollection = client.db("rewatch").collection("products");
 
     //   Get Categories
     app.get("/categories", async (req, res) => {
       const query = {};
       const categories = await categoriesCollection.find(query).toArray();
       res.send(categories);
+    });
+
+    // Add Product
+    app.post("/products", async (req, res) => {
+      const product = req.body;
+      const categories = await categoriesCollection.find({}).toArray();
+      categories.forEach((category) => {
+        if (category.categoryName === product.categoryName) {
+          product.categoryID = category._id;
+        }
+      });
+
+      const query = {
+        role: "seller",
+      };
+
+      const sellers = await usersCollection.find(query).toArray();
+
+      sellers.forEach((seller) => {
+        if (seller.email === product.sellerEmail) {
+          product.sellerId = seller._id;
+        }
+      });
+
+      console.log(product);
+
+      const result = await productCollection.insertOne(product);
+      res.send(result);
     });
 
     // Add user
