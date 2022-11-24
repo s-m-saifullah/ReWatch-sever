@@ -42,6 +42,17 @@ const verifyJWT = (req, res, next) => {
 async function run() {
   try {
     const usersCollection = client.db("rewatch").collection("users");
+    const categoriesCollection = client
+      .db("rewatch")
+      .collection("watchCategories");
+
+    //   Get Categories
+    app.get("/categories", async (req, res) => {
+      const query = {};
+      const categories = await categoriesCollection.find(query).toArray();
+      res.send(categories);
+    });
+
     // Add user
     app.post("/users", async (req, res) => {
       const user = req.body;
