@@ -45,7 +45,8 @@ async function run() {
     const categoriesCollection = client
       .db("rewatch")
       .collection("watchCategories");
-    const productCollection = client.db("rewatch").collection("products");
+    const productsCollection = client.db("rewatch").collection("products");
+    const bookingsCollection = client.db("rewatch").collection("bookings");
 
     //   Get Categories
     app.get("/categories", async (req, res) => {
@@ -57,11 +58,12 @@ async function run() {
     // Get Products by Category Id
     app.get("/categories/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const query = {
-        categoryId: ObjectId(id),
+        categoryID: ObjectId(id),
+        status: "available",
       };
-      const products = await productCollection.find(query).toArray();
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
     });
 
     // Add Product
@@ -89,7 +91,7 @@ async function run() {
 
       console.log(product);
 
-      const result = await productCollection.insertOne(product);
+      const result = await productsCollection.insertOne(product);
       res.send(result);
     });
 
@@ -125,6 +127,7 @@ async function run() {
       return res.status(403).send({ accessToken: "" });
     });
 
+    // Get User By Role
     app.get("/users", async (req, res) => {
       const role = req.query.role;
       const query = {
@@ -132,6 +135,13 @@ async function run() {
       };
       const usersByRole = await usersCollection.find(query).toArray();
       res.send(usersByRole);
+    });
+
+    // Add Booking
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
     });
   } finally {
   }
