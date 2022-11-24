@@ -45,8 +45,33 @@ async function run() {
     // Add user
     app.post("/users", async (req, res) => {
       const user = req.body;
+      const users = await usersCollection
+        .find()
+        .project({ email: 1 })
+        .toArray();
+
+      const userEmails = users.map((user) => user.email);
+      console.log();
+
+      if (userEmails.includes(user.email)) {
+        return res.send({ message: `Welcome Back ${user.name}` });
+      }
       const result = await usersCollection.insertOne(user);
       res.send(result);
+    });
+
+    // Issue JWT Token
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN_SECRET, {
+          expiresIn: "1h",
+        });
+        return res.send({ accessToken: token });
+      }
+      return res.status(403).send({ accessToken: "" });
     });
   } finally {
   }
