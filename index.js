@@ -60,10 +60,22 @@ async function run() {
       const id = req.params.id;
       const query = {
         categoryID: ObjectId(id),
-        status: "available",
+        status: {
+          $ne: "sold",
+        },
       };
       const products = await productsCollection.find(query).toArray();
       res.send(products);
+    });
+
+    // Get Products by User
+    app.get("/products", async (req, res) => {
+      const email = req.query.email;
+      const query = {
+        sellerEmail: email,
+      };
+      const sellerProducts = await productsCollection.find(query).toArray();
+      res.send(sellerProducts);
     });
 
     // Add Product
@@ -95,6 +107,13 @@ async function run() {
       res.send(result);
     });
 
+    app.delete("/products", async (req, res) => {
+      const id = req.query.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Add user
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -110,6 +129,24 @@ async function run() {
         return res.send({ message: `Welcome Back ${user.name}` });
       }
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // Promote Product
+    app.patch("/promote", async (req, res) => {
+      const id = req.query.id;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          promoted: true,
+        },
+      };
+      const options = { upsert: true };
+      const result = await productsCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
       res.send(result);
     });
 
@@ -140,8 +177,24 @@ async function run() {
     // Add Booking
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
+      const filter = {
+        _id: ObjectId(booking.productId),
+      };
+      const updatedDoc = {
+        $set: {
+          status: "booked",
+        },
+      };
+      const options = { upsert: true };
+      const updateResult = await productsCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
       const result = await bookingsCollection.insertOne(booking);
-      res.send(result);
+
+      res.send({ updateResult, result });
     });
   } finally {
   }
