@@ -107,6 +107,7 @@ async function run() {
       res.send(result);
     });
 
+    // Delete Product
     app.delete("/products", async (req, res) => {
       const id = req.query.id;
       const query = { _id: ObjectId(id) };
@@ -132,15 +133,45 @@ async function run() {
       res.send(result);
     });
 
+    // Verify Seller
+    app.patch("/verify", async (req, res) => {
+      const id = req.query.id;
+      console.log(id);
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = { $set: { isVerified: true } };
+      const options = { upsert: true };
+      const result = await usersCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      const productFilter = {
+        sellerId: ObjectId(id),
+      };
+      const productUpdatedDoc = { $set: { isSellerVerified: true } };
+      const updateResult = await productsCollection.updateMany(
+        productFilter,
+        productUpdatedDoc,
+        options
+      );
+
+      res.send({ result, updateResult });
+    });
+
+    // Delete User
+    app.delete("/users", async (req, res) => {
+      const id = req.query.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Promote Product
     app.patch("/promote", async (req, res) => {
       const id = req.query.id;
       const filter = { _id: ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          promoted: true,
-        },
-      };
+      const updatedDoc = { $set: { promoted: true } };
       const options = { upsert: true };
       const result = await productsCollection.updateOne(
         filter,
