@@ -292,6 +292,91 @@ async function run() {
 
       res.send({ bookingDelete, updateResult });
     });
+
+    // Add to Wishlist
+    app.post("/users/wishlist", async (req, res) => {
+      const email = req.query.email;
+      const wishlistItem = req.body;
+      const filter = {
+        email: email,
+      };
+      const updatedDoc = {
+        $push: {
+          wishlist: wishlistItem,
+        },
+      };
+      const options = {
+        upsert: true,
+      };
+
+      const userUpdate = await usersCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      const productFilter = {
+        _id: ObjectId(wishlistItem._id),
+      };
+
+      const productUpdatedDoc = {
+        $push: {
+          userWishlisted: email,
+        },
+      };
+
+      const productUpdate = await productsCollection.updateOne(
+        productFilter,
+        productUpdatedDoc,
+        options
+      );
+
+      res.send({ userUpdate, productUpdate });
+    });
+
+    // Remove from Wishlist
+    app.delete("/users/wishlist", async (req, res) => {
+      const email = req.query.email;
+      const wishlistItem = req.body;
+
+      const filter = {
+        email: email,
+      };
+      const updatedDoc = {
+        $pull: {
+          wishlist: {
+            _id: wishlistItem._id,
+          },
+        },
+      };
+      const options = {
+        upsert: false,
+      };
+
+      const userUpdate = await usersCollection.updateMany(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      const productFilter = {
+        _id: ObjectId(wishlistItem._id),
+      };
+
+      const productUpdatedDoc = {
+        $pull: {
+          userWishlisted: email,
+        },
+      };
+
+      const productUpdate = await productsCollection.updateOne(
+        productFilter,
+        productUpdatedDoc,
+        options
+      );
+
+      res.send({ userUpdate, productUpdate });
+    });
   } finally {
   }
 }
