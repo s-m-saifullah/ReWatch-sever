@@ -338,6 +338,7 @@ async function run() {
     app.delete("/users/wishlist", async (req, res) => {
       const email = req.query.email;
       const wishlistItem = req.body;
+      console.log(email, wishlistItem);
 
       const filter = {
         email: email,
@@ -376,6 +377,18 @@ async function run() {
       );
 
       res.send({ userUpdate, productUpdate });
+    });
+
+    // Get Wishlist Items
+    app.get("/products/wishlist", async (req, res) => {
+      const email = req.query.email;
+
+      const query = {
+        userWishlisted: email,
+      };
+      const wishlist = await productsCollection.find(query).toArray();
+
+      res.send(wishlist);
     });
   } finally {
   }
