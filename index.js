@@ -162,9 +162,29 @@ async function run() {
     // Delete User
     app.delete("/users", async (req, res) => {
       const id = req.query.id;
+      console.log(id);
+      const role = req.query.role;
       const query = { _id: ObjectId(id) };
+
       const result = await usersCollection.deleteOne(query);
-      res.send(result);
+
+      let deleteResult;
+      if (role === "seller") {
+        const productFilter = {
+          sellerId: ObjectId(id),
+        };
+
+        deleteResult = await productsCollection.deleteMany(productFilter);
+      }
+
+      if (role === "buyer") {
+        const bookingFilter = {
+          buyerId: ObjectId(id),
+        };
+        deleteResult = await bookingsCollection.deleteMany(bookingFilter);
+      }
+
+      res.send({ result, deleteResult });
     });
 
     // Promote Product
@@ -222,6 +242,18 @@ async function run() {
         updatedDoc,
         options
       );
+
+      const query = {
+        role: "buyer",
+      };
+
+      const buyers = await usersCollection.find(query).toArray();
+
+      buyers.forEach((buyer) => {
+        if (buyer.email === booking.buyerEmail) {
+          booking.buyerId = buyer._id;
+        }
+      });
 
       const result = await bookingsCollection.insertOne(booking);
 
