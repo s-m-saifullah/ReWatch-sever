@@ -71,11 +71,30 @@ async function run() {
     // Get Products by User
     app.get("/products", async (req, res) => {
       const email = req.query.email;
+
       const query = {
         sellerEmail: email,
       };
       const sellerProducts = await productsCollection.find(query).toArray();
+
       res.send(sellerProducts);
+    });
+
+    // Get Promoted Products
+    app.get("/products/promoted", async (req, res) => {
+      const promoted = req.query.promoted;
+
+      const promotedQuery = {
+        promoted: Boolean(promoted),
+        status: "available",
+      };
+
+      const promotedProducts = await productsCollection
+        .find(promotedQuery)
+        .sort({ promoteTime: -1 })
+        .toArray();
+
+      res.send(promotedProducts);
     });
 
     // Add Product
@@ -189,7 +208,9 @@ async function run() {
     app.patch("/promote", async (req, res) => {
       const id = req.query.id;
       const filter = { _id: ObjectId(id) };
-      const updatedDoc = { $set: { promoted: true } };
+      const updatedDoc = {
+        $set: { promoted: true, promoteTime: new Date().getTime() },
+      };
       const options = { upsert: true };
       const result = await productsCollection.updateOne(
         filter,
