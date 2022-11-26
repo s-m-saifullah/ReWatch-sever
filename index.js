@@ -101,8 +101,6 @@ async function run() {
         }
       });
 
-      console.log(product);
-
       const result = await productsCollection.insertOne(product);
       res.send(result);
     });
@@ -258,6 +256,41 @@ async function run() {
       const result = await bookingsCollection.insertOne(booking);
 
       res.send({ updateResult, result });
+    });
+
+    // Get Booking
+    app.get("/bookings", async (req, res) => {
+      const email = req.query.email;
+      const query = {
+        buyerEmail: email,
+      };
+      const bookings = await bookingsCollection.find(query).toArray();
+      res.send(bookings);
+    });
+
+    // Delete Booking
+    app.delete("/bookings", async (req, res) => {
+      const id = req.query.id;
+      const productId = req.query.productId;
+
+      const query = {
+        _id: ObjectId(id),
+      };
+      const bookingDelete = await bookingsCollection.deleteOne(query);
+
+      const productFilter = {
+        _id: ObjectId(productId),
+      };
+      const updatedDoc = { $set: { status: "available" } };
+      const options = { upsert: true };
+
+      const updateResult = await productsCollection.updateOne(
+        productFilter,
+        updatedDoc,
+        options
+      );
+
+      res.send({ bookingDelete, updateResult });
     });
   } finally {
   }
