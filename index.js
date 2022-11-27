@@ -248,20 +248,25 @@ async function run() {
     });
 
     // Promote Product
-    app.patch("/promote", async (req, res) => {
-      const id = req.query.id;
-      const filter = { _id: ObjectId(id) };
-      const updatedDoc = {
-        $set: { promoted: true, promoteTime: new Date().getTime() },
-      };
-      const options = { upsert: true };
-      const result = await productsCollection.updateOne(
-        filter,
-        updatedDoc,
-        options
-      );
-      res.send(result);
-    });
+    app.patch(
+      "/products/promote",
+      verifyJWT,
+      verifySeller,
+      async (req, res) => {
+        const id = req.query.id;
+        const filter = { _id: ObjectId(id) };
+        const updatedDoc = {
+          $set: { promoted: true, promoteTime: new Date().getTime() },
+        };
+        const options = { upsert: true };
+        const result = await productsCollection.updateOne(
+          filter,
+          updatedDoc,
+          options
+        );
+        res.send(result);
+      }
+    );
 
     // Issue JWT Token
     app.get("/jwt", async (req, res) => {
@@ -278,7 +283,14 @@ async function run() {
     });
 
     // Get User By Role
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
+      const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
       const role = req.query.role;
       const query = {
         role: role,
@@ -323,8 +335,14 @@ async function run() {
     });
 
     // Get Booking
-    app.get("/bookings", async (req, res) => {
+    app.get("/bookings", verifyJWT, verifyBuyer, async (req, res) => {
       const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
       const query = {
         buyerEmail: email,
       };
