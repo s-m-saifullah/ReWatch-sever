@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
@@ -268,6 +269,24 @@ async function run() {
       }
     );
 
+    // Stripe Payment Processing
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const price = parseInt(booking.price.slice(1));
+      const amount = price * 100;
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
     // Issue JWT Token
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
@@ -348,6 +367,16 @@ async function run() {
       };
       const bookings = await bookingsCollection.find(query).toArray();
       res.send(bookings);
+    });
+
+    // Get Booking by Id
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        _id: ObjectId(id),
+      };
+      const booking = await bookingsCollection.findOne(query);
+      res.send(booking);
     });
 
     // Delete Booking
