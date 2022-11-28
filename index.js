@@ -106,9 +106,6 @@ async function run() {
       const id = req.params.id;
       const query = {
         categoryID: ObjectId(id),
-        // status: {
-        //   $ne: "sold",
-        // },
       };
       const products = await productsCollection.find(query).toArray();
       res.send(products);
