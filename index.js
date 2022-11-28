@@ -49,6 +49,7 @@ async function run() {
       .collection("watchCategories");
     const productsCollection = client.db("rewatch").collection("products");
     const bookingsCollection = client.db("rewatch").collection("bookings");
+    const paymentsCollection = client.db("rewatch").collection("payments");
 
     // Verify Admin
     const verifyAdmin = async (req, res, next) => {
@@ -105,9 +106,9 @@ async function run() {
       const id = req.params.id;
       const query = {
         categoryID: ObjectId(id),
-        status: {
-          $ne: "sold",
-        },
+        // status: {
+        //   $ne: "sold",
+        // },
       };
       const products = await productsCollection.find(query).toArray();
       res.send(products);
@@ -285,6 +286,52 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+
+    // Add Payment
+    app.post("/payment", async (req, res) => {
+      // Insert Payment to Collection
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+
+      const id = payment.bookingId;
+      const filter = {
+        _id: ObjectId(id),
+      };
+
+      // Updated booking status
+      const bookingUpdatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const options = {
+        upsert: true,
+      };
+
+      const bookingUpdate = await bookingsCollection.updateOne(
+        filter,
+        bookingUpdatedDoc,
+        options
+      );
+
+      // Update Product Status
+      const filterProduct = {
+        _id: ObjectId(payment.productId),
+      };
+      const productUpdatedDoc = {
+        $set: {
+          status: "sold",
+        },
+      };
+      const updateResult = await productsCollection.updateOne(
+        filterProduct,
+        productUpdatedDoc,
+        options
+      );
+
+      res.send(result);
     });
 
     // Issue JWT Token
